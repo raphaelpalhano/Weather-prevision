@@ -2,8 +2,8 @@ import { Server } from '@overnightjs/core';
 import bodyParser from 'body-parser';
 import * as env from 'dotenv';
 import { ForecastController } from './modules/forecast/application/controllers';
-import { FindForecastUsecase } from './modules/forecast/application/use-cases';
 import { Application } from 'express';
+import { ForecastBeachesUseCase } from './modules/forecast/application/use-cases';
 env.config({
   path: process.env.NODE_ENV === 'develop' ? '.env' : '.env.prod',
 });
@@ -25,7 +25,7 @@ export class SetupServer extends Server {
 
   private setupControllers(): void {
     const forecastController = new ForecastController(
-      new FindForecastUsecase(),
+      new ForecastBeachesUseCase(),
     );
     this.addControllers([forecastController]);
   }

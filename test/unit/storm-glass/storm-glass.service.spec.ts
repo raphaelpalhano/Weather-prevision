@@ -1,20 +1,28 @@
 import { StormGlassService } from '@src/services/storm-glass.service';
-import axios from 'axios';
+import * as RequestHelper from '@src/core/helper/request';
 import stormGlassWeather from '@test/core/fixture/static/storm-glass-weather.json';
 import stormGlassNormalized from '@test/core/fixture/static/storm-glass-weather-normalize.json';
 
-jest.mock('axios');
+jest.mock('@src/core/helper/request');
 
 describe('StormGlass Client', () => {
-  const mockedAxios = axios as jest.Mocked<typeof axios>;
-  const sut = new StormGlassService(mockedAxios);
+  const mockedRequest =
+    new RequestHelper.Request() as jest.Mocked<RequestHelper.Request>;
+
+  const MockedRequestClass = RequestHelper.Request as jest.Mocked<
+    typeof RequestHelper.Request
+  >;
+
+  const sut = new StormGlassService(mockedRequest);
 
   it('should return the normalized forecast from the StormGlass service', async () => {
     //arrange
     const lat = -33.782773;
     const long = 151.2822942;
 
-    mockedAxios.get.mockResolvedValue({ data: stormGlassWeather });
+    mockedRequest.get.mockResolvedValue({
+      data: stormGlassWeather,
+    } as RequestHelper.Response);
 
     // Act
     const response = await sut.fetchPoint(lat, long);
@@ -39,7 +47,9 @@ describe('StormGlass Client', () => {
       ],
     };
 
-    mockedAxios.get.mockResolvedValue({ data: incompleteResponse });
+    mockedRequest.get.mockResolvedValue({
+      data: incompleteResponse,
+    } as RequestHelper.Response);
 
     const response = await sut.fetchPoint(lat, long);
 
@@ -51,7 +61,7 @@ describe('StormGlass Client', () => {
     const lat = -33.782773;
     const long = 151.2822942;
 
-    mockedAxios.get.mockRejectedValue({ message: 'Network Error' });
+    mockedRequest.get.mockRejectedValue({ message: 'Network Error' });
 
     await expect(sut.fetchPoint(lat, long)).rejects.toThrow(
       'Unexpected error when trying to communicate to StormGlass: Network Error',
@@ -63,7 +73,9 @@ describe('StormGlass Client', () => {
     const lat = -33.782773;
     const long = 151.2822942;
 
-    mockedAxios.get.mockRejectedValue({
+    MockedRequestClass.isRequestError.mockReturnValue(true);
+
+    mockedRequest.get.mockRejectedValue({
       response: {
         status: 429,
         data: { erros: ['Rate Limit reached'] },

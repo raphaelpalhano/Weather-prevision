@@ -1,1 +1,1 @@
-export * from './find-forecast.usecase';
+export * from './forecast-beaches.usecase';

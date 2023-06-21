@@ -1,27 +1,12 @@
-import { InternalError } from '@src/common/errors/internal-error';
 import { ForecastPoint } from '@src/core/domain/interfaces/forecast-point.interface';
 import {
   StormGlassForecastResponse,
   StormGlassPoint,
 } from '@src/core/domain/interfaces/storm-glass.interface';
-import { AxiosStatic } from 'axios';
 import config, { IConfig } from 'config';
-
-export class ClientRequestError extends InternalError {
-  constructor(message: string) {
-    const internalMessage =
-      'Unexpected error when trying to communicate to StormGlass';
-    super(`${internalMessage}: ${message}`);
-  }
-}
-
-export class StormGlassResponseError extends InternalError {
-  constructor(message: string) {
-    const internalMessage =
-      'Unexpected error returned by the StormGlass service';
-    super(`${internalMessage}: ${message}`);
-  }
-}
+import * as RequestHelper from '@src/core/helper/request';
+import { ClientRequestError } from '@src/common/errors/client-request.error';
+import { StormGlassResponseError } from '@src/common/errors/storm-glass.error';
 
 const stormGlassResourceConfig: IConfig = config.get(
   'App.Resources.StormGlass',
@@ -31,7 +16,7 @@ export class StormGlassService {
   private readonly stormGlassAPIParams =
     'swellDirection,swellHeight,swellPeriod,waveDirection,waveHeight,windDirection,windSpeed';
   private readonly stormGlassAPISource = 'noaa';
-  constructor(protected request: AxiosStatic) {}
+  constructor(protected request = new RequestHelper.Request()) {}
 
   public async fetchPoint(lat: number, long: number): Promise<ForecastPoint[]> {
     try {
@@ -50,7 +35,7 @@ export class StormGlassService {
 
       return this.normalizeResponse(response.data);
     } catch (err: any) {
-      if (err.response && err.response.status) {
+      if (RequestHelper.Request.isRequestError(err)) {
         throw new StormGlassResponseError(
           `Error: ${JSON.stringify(err.response.data)} Code: ${
             err.response.status
@@ -58,7 +43,7 @@ export class StormGlassService {
         );
       }
       // The type is temporary given we will rework it in the upcoming chapters
-      throw new ClientRequestError((err as { message: any }).message);
+      throw new ClientRequestError(err.message);
     }
   }
 
